@@ -1,11 +1,14 @@
-import { IsDecimal, Min, IsBoolean, IsOptional } from 'class-validator';
+import { Min, IsBoolean, IsOptional, IsInt, IsNumber } from 'class-validator';
 
 export class CreateOfferDto {
-  @IsDecimal({ decimal_digits: '0,2' })
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   amount: number;
 
   @IsBoolean()
   @IsOptional()
   hidden?: boolean = false;
+
+  @IsInt()
+  itemId: number;
 }

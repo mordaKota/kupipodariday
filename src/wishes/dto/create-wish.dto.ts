@@ -1,4 +1,4 @@
-import { IsString, IsUrl, Length, IsDecimal, Min } from 'class-validator';
+import { IsString, IsUrl, Length, Min, IsNumber } from 'class-validator';
 
 export class CreateWishDto {
   @IsString()
@@ -10,8 +10,7 @@ export class CreateWishDto {
 
   @IsUrl()
   image: string;
-
-  @IsDecimal({ decimal_digits: '0,2' })
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   price: number;
 

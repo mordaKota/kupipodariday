@@ -1,26 +1,78 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateOfferDto } from './dto/create-offer.dto';
-import { UpdateOfferDto } from './dto/update-offer.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Offer } from './entities/offer.entity';
+import { Repository } from 'typeorm';
+import { Wish } from '../wishes/entities/wish.entity';
 
 @Injectable()
 export class OffersService {
-  create(createOfferDto: CreateOfferDto) {
-    return 'This action adds a new offer';
+  constructor(
+    @InjectRepository(Offer)
+    private offerRepository: Repository<Offer>,
+    @InjectRepository(Wish)
+    private wishRepository: Repository<Wish>,
+  ) {}
+
+  async create(userId: number, createOfferDto: CreateOfferDto) {
+    const { amount, itemId } = createOfferDto;
+
+    const wish = await this.wishRepository.findOne({
+      where: { id: itemId },
+      relations: ['owner', 'offers'],
+    });
+
+    if (!wish) {
+      throw new NotFoundException('Wish not found');
+    }
+
+    if (wish.owner.id === userId) {
+      throw new ForbiddenException('You cannot contribute to your own wish');
+    }
+
+    const totalRaised = wish.offers.reduce(
+      (sum, offer) => sum + offer.amount,
+      0,
+    );
+    if (totalRaised + amount > wish.price) {
+      throw new ForbiddenException(
+        'Contribution exceeds the remaining amount needed',
+      );
+    }
+
+    const offer = this.offerRepository.create({
+      ...createOfferDto,
+      user: { id: userId },
+      item: wish,
+    });
+
+    return this.offerRepository.save(offer);
   }
 
-  findAll() {
-    return `This action returns all offers`;
+  async findAll() {
+    return this.offerRepository.find({ relations: ['user', 'item'] });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} offer`;
-  }
-
-  update(id: number, updateOfferDto: UpdateOfferDto) {
-    return `This action updates a #${id} offer`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} offer`;
+  async findOne(id: number) {
+    const offer = await this.offerRepository.findOne({
+      where: { id },
+      relations: [
+        'user',
+        'user.wishes',
+        'user.wishlists',
+        'user.wishlists.items',
+        'item',
+        'item.owner',
+        'item.offers',
+      ],
+    });
+    if (!offer) {
+      throw new NotFoundException(`Offer with id ${id} not found`);
+    }
+    return offer;
   }
 }

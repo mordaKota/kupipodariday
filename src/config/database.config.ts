@@ -12,8 +12,7 @@ export default () => ({
     password: process.env.DATABASE_PASSWORD,
     database: process.env.DATABASE_NAME,
     entities: [User, Wish, Wishlist, Offer],
-    synchronize: false,
-    logging: true,
+    synchronize: true,
     timeZone: 'SYSTEM',
   },
 });

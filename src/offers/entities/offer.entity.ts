@@ -1,7 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Wish } from '../../wishes/entities/wish.entity';
-import { IsDecimal } from 'class-validator';
+import { IsNumber } from 'class-validator';
 
 @Entity()
 export class Offer {
@@ -15,9 +22,15 @@ export class Offer {
   item: Wish;
 
   @Column('decimal', { precision: 10, scale: 2 })
-  @IsDecimal()
+  @IsNumber({ maxDecimalPlaces: 2 })
   amount: number;
 
   @Column({ default: false })
   hidden: boolean;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

@@ -5,10 +5,12 @@ import {
   ManyToOne,
   ManyToMany,
   JoinTable,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Offer } from '../../offers/entities/offer.entity';
-import { IsDecimal, IsUrl, Length } from 'class-validator';
+import { IsDecimal, IsNumber, IsUrl, Length } from 'class-validator';
 
 @Entity()
 export class Wish {
@@ -28,7 +30,7 @@ export class Wish {
   image: string;
 
   @Column('decimal', { precision: 10, scale: 2 })
-  @IsDecimal()
+  @IsNumber({ maxDecimalPlaces: 2 })
   price: number;
 
   @Column('decimal', { precision: 10, scale: 2, default: 0 })
@@ -48,4 +50,10 @@ export class Wish {
 
   @Column('int', { default: 0 })
   copied: number;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

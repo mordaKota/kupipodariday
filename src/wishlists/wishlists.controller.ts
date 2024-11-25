@@ -6,18 +6,24 @@ import {
   Patch,
   Param,
   Delete,
+  Req,
 } from '@nestjs/common';
 import { WishlistsService } from './wishlists.service';
 import { CreateWishlistDto } from './dto/create-wishlist.dto';
 import { UpdateWishlistDto } from './dto/update-wishlist.dto';
+import { RequestWithUser } from '../common/interfaces/request-with-user.interface';
 
-@Controller('wishlists')
+@Controller('wishlistlists')
 export class WishlistsController {
   constructor(private readonly wishlistsService: WishlistsService) {}
 
   @Post()
-  create(@Body() createWishlistDto: CreateWishlistDto) {
-    return this.wishlistsService.create(createWishlistDto);
+  create(
+    @Req() req: RequestWithUser,
+    @Body() createWishlistDto: CreateWishlistDto,
+  ) {
+    const userId: number = req.user.id;
+    return this.wishlistsService.create(userId, createWishlistDto);
   }
 
   @Get()
@@ -32,14 +38,17 @@ export class WishlistsController {
 
   @Patch(':id')
   update(
+    @Req() req: RequestWithUser,
     @Param('id') id: string,
     @Body() updateWishlistDto: UpdateWishlistDto,
   ) {
-    return this.wishlistsService.update(+id, updateWishlistDto);
+    const userId: number = req.user.id;
+    return this.wishlistsService.update(+id, userId, updateWishlistDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.wishlistsService.remove(+id);
+  remove(@Req() req: RequestWithUser, @Param('id') id: string) {
+    const userId: number = req.user.id;
+    return this.wishlistsService.remove(+id, userId);
   }
 }

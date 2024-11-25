@@ -14,7 +14,7 @@ export class AuthService {
   async generateToken(username: string): Promise<any> {
     const user = await this.usersService.findOneByUsername(username);
 
-    const payload = { sub: user.id, username: user.username };
+    const payload = { id: user.id, username: user.username };
     return {
       access_token: await this.jwtService.signAsync(payload),
     };
@@ -31,7 +31,7 @@ export class AuthService {
     if (!isMatch) {
       throw new UnauthorizedException();
     }
-    delete user.password;
+
     return user;
   }
 

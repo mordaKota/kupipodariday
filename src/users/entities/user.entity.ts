@@ -10,6 +10,7 @@ import { Wish } from '../../wishes/entities/wish.entity';
 import { Offer } from '../../offers/entities/offer.entity';
 import { Wishlist } from '../../wishlists/entities/wishlist.entity';
 import { IsEmail, IsUrl, Length } from 'class-validator';
+import { Exclude } from 'class-transformer';
 
 @Entity()
 export class User {
@@ -39,6 +40,7 @@ export class User {
   email: string;
 
   @Column()
+  @Exclude()
   password: string;
 
   @OneToMany(() => Wish, (wish) => wish.owner)
@@ -47,6 +49,6 @@ export class User {
   @OneToMany(() => Offer, (offer) => offer.user)
   offers: Offer[];
 
-  @OneToMany(() => Wishlist, (wishlist) => wishlist.user)
+  @OneToMany(() => Wishlist, (wishlist) => wishlist.owner)
   wishlists: Wishlist[];
 }
