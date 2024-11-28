@@ -6,7 +6,7 @@ import {
 import { CreateOfferDto } from './dto/create-offer.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Offer } from './entities/offer.entity';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Wish } from '../wishes/entities/wish.entity';
 
 @Injectable()
@@ -16,41 +16,61 @@ export class OffersService {
     private offerRepository: Repository<Offer>,
     @InjectRepository(Wish)
     private wishRepository: Repository<Wish>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(userId: number, createOfferDto: CreateOfferDto) {
     const { amount, itemId } = createOfferDto;
 
-    const wish = await this.wishRepository.findOne({
-      where: { id: itemId },
-      relations: ['owner', 'offers'],
-    });
+    return await this.dataSource.transaction(async (manager) => {
+      const wish = await manager.findOne(Wish, {
+        where: { id: itemId },
+        lock: { mode: 'pessimistic_write' },
+      });
 
-    if (!wish) {
-      throw new NotFoundException('Wish not found');
-    }
+      if (!wish) {
+        throw new NotFoundException('Wish not found');
+      }
 
-    if (wish.owner.id === userId) {
-      throw new ForbiddenException('You cannot contribute to your own wish');
-    }
+      const wishWithRelations = await manager.findOne(Wish, {
+        where: { id: itemId },
+        relations: ['owner', 'offers'],
+      });
 
-    const totalRaised = wish.offers.reduce(
-      (sum, offer) => sum + offer.amount,
-      0,
-    );
-    if (totalRaised + amount > wish.price) {
-      throw new ForbiddenException(
-        'Contribution exceeds the remaining amount needed',
+      if (wishWithRelations.owner.id === userId) {
+        throw new ForbiddenException('You cannot contribute to your own wish');
+      }
+
+      const totalRaised = (wishWithRelations.offers || []).reduce(
+        (sum, offer) => sum + offer.amount,
+        0,
       );
-    }
 
-    const offer = this.offerRepository.create({
-      ...createOfferDto,
-      user: { id: userId },
-      item: wish,
+      if (totalRaised + amount > wishWithRelations.price) {
+        throw new ForbiddenException(
+          'Contribution exceeds the remaining amount needed',
+        );
+      }
+
+      const offer = manager.create(Offer, {
+        ...createOfferDto,
+        user: { id: userId },
+        item: wish,
+      });
+
+      await manager.save(offer);
+
+      wish.raised =
+        parseFloat(
+          (wishWithRelations.offers || [])
+            .reduce((sum, offer) => sum + offer.amount, 0)
+            .toFixed(2),
+        ) + amount;
+
+      await manager.save(wish);
+
+      return offer;
     });
-
-    return this.offerRepository.save(offer);
   }
 
   async findAll() {

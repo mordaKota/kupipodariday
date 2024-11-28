@@ -3,10 +3,9 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
-  ManyToMany,
-  JoinTable,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Offer } from '../../offers/entities/offer.entity';
@@ -44,8 +43,7 @@ export class Wish {
   @Length(1, 1024)
   description: string;
 
-  @ManyToMany(() => Offer)
-  @JoinTable()
+  @OneToMany(() => Offer, (offer) => offer.item)
   offers: Offer[];
 
   @Column('int', { default: 0 })
